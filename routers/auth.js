@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../middlewares/authMiddleware");
+
 const {
   register,
   getUserInfo,
@@ -11,10 +11,6 @@ const {
 
 router.route("/register").post(register);
 router.route("/login").post(login);
-router
-  .route("/:id")
-  .get(authMiddleware, getUserInfo)
-  .patch(authMiddleware, updateData)
-  .delete(authMiddleware, deleteUser);
+router.route("/:id").get(getUserInfo).patch(updateData).delete(deleteUser);
 
 module.exports = router;

@@ -1,26 +1,26 @@
-require("dotenv").config();
-const jwt = require("jsonwebtoken");
 const { StatusCodes } = require("http-status-codes");
-const User = require("../models/user");
+const User = require("../models/User");
+const { BadRequestError, UnauthenticatedError } = require("../errors");
 
 const register = async (req, res) => {
   // step 1
   // create the user | the validation is here in the schema
-  let user = await User.create(req.body);
-  let payload = { name: user.name, password: user.password };
+  const user = await User.create(req.body);
 
-  const token = jwt.sign(payload, process.env.SECRETE_KEY, {
-    expiresIn: "10d",
-  });
-
-  let userInfo = { name: user.name, email: user.email };
-  res.status(StatusCodes.CREATED).json({ userInfo, token });
+  const token = user.createJWT();
+  res
+    .status(StatusCodes.CREATED)
+    .json({ name: user.name, id: user._id, token });
 };
 
 const getUserInfo = async (req, res) => {
   const userID = req.params.id;
-  const userInfo = await User.findById(userID).select("name email");
-  res.status(StatusCodes.OK).json({ userInfo, verificateToken });
+  // if I don't wanna select a key use: select("-password")
+  const user = await User.findById(userID).select("name email");
+  if (!user) {
+    throw new BadRequestError(`there is no user with this id: ${userID}`);
+  }
+  res.status(StatusCodes.OK).json(user);
 };
 
 const updateData = async (req, res) => {
@@ -29,26 +29,38 @@ const updateData = async (req, res) => {
     new: true,
     runValidators: true,
   }).select("name email");
+  if (!user) {
+    throw new BadRequestError(`there is no user with this id: ${userID}`);
+  }
   res.status(StatusCodes.OK).json(user);
 };
 
 const deleteUser = async (req, res) => {
   const userID = req.params.id;
   const user = await User.findByIdAndDelete(userID);
+  if (!user) {
+    throw new BadRequestError(`there is no user with this id: ${userID}`);
+  }
   res.status(StatusCodes.OK).json(user);
 };
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-  let user = await User.findOne({ email, password });
+  if (!email || !password) {
+    throw new BadRequestError("Please provide both your email and password");
+  }
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new UnauthenticatedError("You have passed the wrong email");
+  }
 
-  let payload = { name: user.name, password: user.password };
-  const token = jwt.sign(payload, process.env.SECRETE_KEY, {
-    expiresIn: "10d",
-  });
+  const isPasswordCorrect = await user.comparePassword(password);
+  if (!isPasswordCorrect) {
+    throw new UnauthenticatedError("You have passed the wrong password");
+  }
 
-  let userInfo = { name: user.name, email: user.email };
-  res.status(StatusCodes.CREATED).json({ userInfo, token });
+  const token = user.createJWT();
+  res.status(StatusCodes.CREATED).json({ name: user.name, token });
 };
 
 module.exports = {
