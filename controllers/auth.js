@@ -25,6 +25,9 @@ const getUserInfo = async (req, res) => {
 
 const updateData = async (req, res) => {
   const userID = req.params.id;
+  if (req.body.name) {
+    req.body.name = req.body.name.toLowerCase();
+  }
   const user = await User.findByIdAndUpdate(userID, req.body, {
     new: true,
     runValidators: true,
@@ -45,10 +48,13 @@ const deleteUser = async (req, res) => {
 };
 
 const login = async (req, res) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+
   if (!email || !password) {
     throw new BadRequestError("Please provide both your email and password");
   }
+
+  email = email.toLowerCase();
   const user = await User.findOne({ email });
   if (!user) {
     throw new UnauthenticatedError("You have passed the wrong email");
@@ -60,7 +66,9 @@ const login = async (req, res) => {
   }
 
   const token = user.createJWT();
-  res.status(StatusCodes.CREATED).json({ name: user.name, token });
+  res
+    .status(StatusCodes.CREATED)
+    .json({ name: user.name, id: user._id, token });
 };
 
 module.exports = {

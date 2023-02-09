@@ -22,3 +22,4 @@ const authMiddleware = (req, res, next) => {
 };
 
 module.exports = authMiddleware;
+// we use this middelware before getting access to any route that needs the user to be authirized.

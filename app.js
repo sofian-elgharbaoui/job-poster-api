@@ -8,6 +8,7 @@ require("dotenv").config();
 require("express-async-errors");
 
 // middlewares
+const authMiddleware = require("./middlewares/auth");
 const errorsHandler = require("./middlewares/errors_handler");
 const notFound = require("./middlewares/not_found");
 
@@ -15,11 +16,12 @@ const notFound = require("./middlewares/not_found");
 const authRouter = require("./routers/auth");
 const jobsRouter = require("./routers/jobs");
 
+app.use(express.static("./public"));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/jobs", jobsRouter);
+app.use("/api/v1/jobs", authMiddleware, jobsRouter);
 
 app.use(notFound);
 app.use(errorsHandler);

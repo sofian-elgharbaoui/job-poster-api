@@ -40,7 +40,7 @@ UserSchema.pre("save", async function (next) {
   this.email = this.email.toLowerCase();
   // hashing the password
   const salt = await bcrypt.genSalt();
-  this.password = await bcrypt.hash(this.password, salt);
+  this.password = bcrypt.hash(this.password, salt); // insert an await keyword
   next();
 });
 
